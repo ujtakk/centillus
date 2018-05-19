@@ -11,14 +11,15 @@ val libgdxVersion = "1.7.0"
 lazy val sharedSettings: Seq[Def.Setting[_]] = Seq(
   name := "centillus",
   version := "0.1",
-  scalaVersion := "2.11.5",
+  scalaVersion := "2.11.12",
   assetsDirectory := {
     val r = file("assets")
     IO.createDirectory(r)
     r
   },
   libraryDependencies ++= Seq(
-    "com.badlogicgames.gdx" % "gdx" % libgdxVersion
+    "com.badlogicgames.gdx" % "gdx" % libgdxVersion,
+    "org.scala-lang.modules" %% "scala-parser-combinators" % "1.1.0"
   ),
   javacOptions ++= Seq(
     "-Xlint",
