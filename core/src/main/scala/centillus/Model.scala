@@ -1,7 +1,7 @@
 package centillus
 
 import java.nio.file.Paths
-import scala.collection.mutable.HashMap
+import scala.collection.mutable.{HashMap, Map => MMap}
 
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.assets.AssetManager
@@ -30,13 +30,13 @@ class Model {
 
   type Id = String
   type Path = String
-  private val wavPathMap = new HashMap[Id, Path]
-  private val bmpPathMap = new HashMap[Id, Path]
+  val wavPathMap = new HashMap[Id, Path]
+  val bmpPathMap = new HashMap[Id, Path]
   type Bar = Int
   type Chan = Int
   type Time = Float
-  type DataChan = HashMap[Chan, List[(Time, Id)]]
-  private val dataMap = new HashMap[Bar, DataChan]
+  type Data = Seq[(Time, Id)]
+  var dataMap = MMap.empty[Bar, MMap[Chan, Data]]
 
   // parse the source bms file and load obtained ASTs to the inner DB.
   // header information and sequence data may be stored separately.
@@ -76,25 +76,28 @@ class Model {
     }
     case WAV(number, filename) => { wavPathMap += (number -> filename) }
     case BMP(number, filename) => { bmpPathMap += (number -> filename) }
-    case Data(bar, chan, objs) => { dataMap(bar)(chan) = readObjs(objs) }
+    case Data(bar, chan, objs) => {
+      val chanMap = dataMap.getOrElseUpdate(bar, MMap.empty[Chan, Data])
+      chanMap(chan) = readObjs(objs)
+    }
   }
 
-  def readObjs(objs: String): List[(Time, Id)] = {
-    var channel: List[(Time, Id)] = List()
-    val period: Float = 2 / objs.length
-    for (i <- 0 until objs.length by 2) {
-      val time: Time = period * (i/2+1)
+  def readObjs(objs: String): Seq[(Time, Id)] = {
+    val barSec: Float = 240 / bpm
+    val numNotes: Int = objs.length / 2
+    val noteNanos: Float = barSec / numNotes * 1e9.toFloat
+    (0 until objs.length by 2).map(i => {
+      val pos = i/2 + 1
+      val time: Time = noteNanos * pos
       val body: Id = objs.substring(i, i+2)
-      channel ::= (time, body)
-    }
-
-    return channel
+      (time, body)
+    })
   }
 
   def loadSounds() = {
     for ((_, filename) <- wavPathMap) {
       val path = Paths.get(prefix, filename).toString()
-      manager.load(path, classOf[Sound])
+      // manager.load(path, classOf[Sound])
     }
   }
 
@@ -107,10 +110,18 @@ class Model {
 
   def updateManager(): Boolean = manager.update()
 
-  def getBPM(frame: Int) = bpm
-  def getData(frame: Int) = dataMap(frame)
-  def getSound(number: String) = { }
-  def getImage(number: String) = { }
+  def getBPM(bar: Int) = bpm
+  def getData(bar: Int) = dataMap(bar)
+  def getSound(number: String) = {
+    val filename = wavPathMap(number)
+    val path = Paths.get(prefix, filename).toString()
+    manager.get(path, classOf[Sound])
+  }
+  def getImage(number: String) = {
+    val filename = bmpPathMap(number)
+    val path = Paths.get(prefix, filename).toString()
+    manager.get(path, classOf[Texture])
+  }
 
   def getStageFile(): Texture = stagefileTexture
 }

@@ -31,10 +31,10 @@ class Centillus(val bmsPath: String) extends Game {
   override def dispose(): Unit = {}
 
   def isLoadingEnd() = model.updateManager()
-  def fetchBPM(frameCount: Int) = model.getBPM(frameCount)
+  def fetchBPM(barCount: Int) = model.getBPM(barCount)
   def fetchData(barCount: Int) = model.getData(barCount)
   def fetchSound(number: String) = model.getSound(number)
-  def fetchImage(number: String) = model.getImage(number)
+  def fetchImage(number: String): Texture = model.getImage(number)
   def fetchStageFile() = model.getStageFile()
 
   def judgeInput(keycode: Int): Judgement = {
@@ -66,9 +66,9 @@ class Centillus(val bmsPath: String) extends Game {
     shape.end()
   }
 
-  def drawImage(image: Texture, x: Float, y: Float) = {
+  def drawImage(image: Texture, x: Float, y: Float, w: Float, h: Float) = {
     batch.begin()
-    batch.draw(image, x, y)
+    batch.draw(image, x, y, w, h)
     batch.end()
   }
 }

@@ -4,6 +4,11 @@ import com.badlogic.gdx.{
   Screen,
   Gdx
 }
+import com.badlogic.gdx.graphics.{
+  Texture
+}
+import com.badlogic.gdx.utils.TimeUtils
+import com.badlogic.gdx.graphics.Pixmap
 
 class PlayScreen(final val game: Centillus) extends Screen {
   lazy val input = new PlayInputProcessor(game, this)
@@ -12,19 +17,12 @@ class PlayScreen(final val game: Centillus) extends Screen {
   val width: Float = Gdx.graphics.getWidth()
   val height: Float = Gdx.graphics.getHeight()
 
-  // private var bpm = game.fetchBPM()
-
-  private var frameCount: Int = 0
-  private var barCount: Int = 0
+  private def bpm = game.fetchBPM(barCount)
 
   var playStarted: Boolean = false
   var playFinished: Boolean = false
-  def playStart() = {
-    playStarted = true
-  }
-  def playFinish() = {
-    playFinished = true
-  }
+  def playStart() = { playStarted = true }
+  def playFinish() = { playFinished = true }
 
   override def dispose(): Unit = {
   }
@@ -35,18 +33,43 @@ class PlayScreen(final val game: Centillus) extends Screen {
   override def pause(): Unit = {
   }
 
+  var baseTime: Long = 0
+  def milliBar: Long = (240 / bpm).toInt * 1000
+  def barTime = TimeUtils.millisToNanos(milliBar)
+
+  var frameCount: Int = 0
+  var barCount: Int = 0
+  var barData = game.fetchData(barCount)
+
+  def barStart(): Boolean = {
+    if (baseTime == 0) {
+      baseTime = TimeUtils.nanoTime()
+    }
+
+    val currTime = TimeUtils.nanoTime()
+    if (currTime - baseTime > barTime) {
+      baseTime = currTime
+      return true
+    }
+
+    return false
+  }
+
   override def render(x: Float): Unit = {
+    if (barStart) {
+      barCount += 1
+      barData = game.fetchData(barCount)
+    }
+
     initScreen()
-    if (!playStarted)
-      return
+    // if (!playStarted)
+    //   return
 
-    // val notes = game.fetchNotes()
-    // val sounds = game.fetchSounds()
-    // val image = game.fetchImage()
-
-    // drawNotes(notes)
+    // drawNotes()
     drawAnime()
+    // drawJudge()
     // drawGauge()
+    // drawScore()
 
     // if (playFinished)
     //   game.setScreen(new ResultScreen(game))
@@ -116,9 +139,22 @@ class PlayScreen(final val game: Centillus) extends Screen {
   val animeY: Float = 44
   val animeW: Float = 512
   val animeH: Float = 512
-  // def drawAnime(image: Texture) = {
+  var cacheImage: Texture = new Texture(animeW.toInt, animeH.toInt,
+                                        Pixmap.Format.RGB888)
   def drawAnime() = {
-    game.makeRect("000000", animeX, animeY, animeW, animeH)
+    if (barData.contains(4)) {
+      def animeChan = barData(4)
+      val (targetTime, targetBGA) = animeChan.head
+      val currTime = TimeUtils.timeSinceNanos(baseTime)
+      if (targetTime < currTime) {
+        barData(4) = animeChan.tail
+        if (targetBGA != "00") {
+          cacheImage = game.fetchImage(targetBGA)
+        }
+      }
+    }
+    game.drawImage(cacheImage, animeX, animeY, animeW, animeH)
+    // game.makeRect("000000", animeX, animeY, animeW, animeH)
   }
 
   var currentJudge: Judgement = Poor

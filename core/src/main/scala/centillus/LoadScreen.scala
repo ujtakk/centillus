@@ -22,9 +22,9 @@ class LoadScreen(final val game: Centillus) extends Screen {
   override def render(x: Float): Unit = {
     game.initScreen()
 
-    val offsetX = (winWidth-imgWidth) / 2
-    val offsetY = (winHeight-imgHeight) / 2
-    game.drawImage(image, offsetX, offsetY)
+    // val offsetX = (winWidth-imgWidth) / 2
+    // val offsetY = (winHeight-imgHeight) / 2
+    game.drawImage(image, 0, 0, winWidth, winHeight)
 
     if (game.isLoadingEnd()) {
       game.setScreen(new PlayScreen(game))
