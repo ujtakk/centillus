@@ -31,8 +31,10 @@ class Centillus(val bmsPath: String) extends Game {
   override def dispose(): Unit = {}
 
   def isLoadingEnd() = model.updateManager()
-  def fetchBPM(barCount: Int) = model.getBPM(barCount)
+
+  def canFetchData(barCount: Int) = model.hasData(barCount)
   def fetchData(barCount: Int) = model.getData(barCount)
+  def fetchBPM(barCount: Int) = model.getBPM(barCount)
   def fetchSound(number: String) = model.getSound(number)
   def fetchImage(number: String): Texture = model.getImage(number)
   def fetchStageFile() = model.getStageFile()
@@ -54,15 +56,18 @@ class Centillus(val bmsPath: String) extends Game {
     shape.end()
   }
 
-  def makeRect(color: String, x: Float, y: Float, w: Float, h: Float) = {
+  def makeRect(color: String, x: Float, y: Float, w: Float, h: Float,
+               lineColor: String = "") = {
     shape.begin(ShapeType.Filled)
     shape.setColor(Color.valueOf(color))
     shape.rect(x, y, w, h)
-    shape.setColor(Color.valueOf("ffffff"))
-    shape.rectLine(x,   y,   x,   y+h, 1)
-    shape.rectLine(x,   y+h, x+w, y+h, 1)
-    shape.rectLine(x+w, y+h, x+w, y,   1)
-    shape.rectLine(x+w, y,   x,   y,   1)
+    if (lineColor != "") {
+      shape.setColor(Color.valueOf("ffffff"))
+      shape.rectLine(x,   y,   x,   y+h, 1)
+      shape.rectLine(x,   y+h, x+w, y+h, 1)
+      shape.rectLine(x+w, y+h, x+w, y,   1)
+      shape.rectLine(x+w, y,   x,   y,   1)
+    }
     shape.end()
   }
 

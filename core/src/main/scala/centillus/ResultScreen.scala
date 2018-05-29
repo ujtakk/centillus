@@ -3,8 +3,6 @@ package centillus
 import com.badlogic.gdx.{Screen, Gdx}
 
 class ResultScreen(final val game: Centillus) extends Screen {
-  lazy val music = Gdx.audio.newMusic(Gdx.files.internal("hoge"))
-
   override def dispose(): Unit = {
   }
 
@@ -15,6 +13,7 @@ class ResultScreen(final val game: Centillus) extends Screen {
   }
 
   override def render(x: Float): Unit = {
+    Gdx.app.exit()
   }
 
   override def resize(x: Int, y: Int): Unit = {

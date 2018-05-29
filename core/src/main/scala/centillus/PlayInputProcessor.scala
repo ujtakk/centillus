@@ -17,7 +17,6 @@ extends InputProcessor {
       case Keys.L =>
       case Keys.SEMICOLON =>
       case Keys.ENTER =>
-        screen.playStart()
       case _ =>
     }
     // val result = game.judgeInput(keycode)

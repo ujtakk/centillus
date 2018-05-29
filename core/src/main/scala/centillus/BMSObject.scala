@@ -6,7 +6,7 @@ case class Player(number: Int) extends BMSObject
 case class Genre(name: String) extends BMSObject
 case class Title(name: String) extends BMSObject
 case class Artist(name: String) extends BMSObject
-case class BPM(tempo: Float) extends BMSObject
+case class BPM(tempo: Double) extends BMSObject
 case class Playlevel(level: Int) extends BMSObject
 case class Rank(number: Int) extends BMSObject
 case class Total(amount: Int) extends BMSObject

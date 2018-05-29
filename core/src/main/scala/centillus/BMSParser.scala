@@ -16,9 +16,9 @@ class BMSParser extends RegexParsers {
     case "ARTIST" ~ name => Artist(name)
   }
   def bpm = "BPM" ~ """\d{3}""".r ^^ {
-    case "BPM" ~ tempo => BPM(tempo.toFloat)
+    case "BPM" ~ tempo => BPM(tempo.toDouble)
   }
-  def playlevel = "PLAYLEVEL" ~ """[1-8]""".r ^^ {
+  def playlevel = "PLAYLEVEL" ~ """\d{1,}""".r ^^ {
     case "PLAYLEVEL" ~ level => Playlevel(level.toInt)
   }
   def rank = "RANK" ~ """[0-3]""".r ^^ {
@@ -53,9 +53,12 @@ class BMSParser extends RegexParsers {
 
   def barLit = """[0-9]{3}""".r
   def chanLit = """[0-9]{2}""".r
+  def decLit = """([0-9]+\.[0-9]+)""".r
   def objsLit = """([0-9A-Z]{2})+""".r
-  def data: Parser[Data] = "#" ~ barLit ~ chanLit ~ ":" ~ objsLit ^^ {
-    case "#" ~ bar ~ chan ~ ":" ~ objs => Data(bar.toInt, chan.toInt, objs)
+  def data: Parser[Data] = "#" ~ barLit ~ chanLit ~ ":" ~ (objsLit | decLit) ^^ {
+    case "#" ~ bar ~ chan ~ ":" ~ objs => {
+      Data(bar.toInt, chan.toInt, objs)
+    }
   }
 
   def comment: Parser[BMSNil] = "*" ~ raw".*".r ^^ { case _ => BMSNil() }
@@ -64,7 +67,10 @@ class BMSParser extends RegexParsers {
 
   def parse(input: String): Either[String, List[BMSObject]] =
     parseAll(expr, input) match {
-      case Success(data, next) => Right(data)
+      case Success(data, next) => {
+        println(data)
+        Right(data)
+      }
       case NoSuccess(err, next) =>
         Left(s"$err on line ${next.pos.line} on column ${next.pos.column}")
     }
