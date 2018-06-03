@@ -36,6 +36,9 @@ class BMSParser extends RegexParsers {
   def bmp = "BMP" ~ """[0-9A-Z]{2}""".r ~ """(.*)""".r ^^ {
     case "BMP" ~ number ~ filename => BMP(number, filename)
   }
+  def ignore = "#" ~ """[a-zA-Z]+""".r ~ """(.*)""".r ^^ {
+    case "#" ~ cmd ~ str => BMSNil()
+  }
   def header: Parser[BMSObject] = "#" ~ ( player
                                         | genre
                                         | title
@@ -63,7 +66,7 @@ class BMSParser extends RegexParsers {
 
   def comment: Parser[BMSNil] = "*" ~ raw".*".r ^^ { case _ => BMSNil() }
 
-  def expr: Parser[List[BMSObject]] = (header | data | comment).*
+  def expr: Parser[List[BMSObject]] = (header | data | comment | ignore).*
 
   def parse(input: String): Either[String, List[BMSObject]] =
     parseAll(expr, input) match {

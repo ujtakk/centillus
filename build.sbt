@@ -6,7 +6,7 @@ import org.apache.commons.io.FileUtils
 import scala.collection.convert.wrapAll._
 import sbtrobovm.RobovmPlugin.ManagedNatives
 
-val libgdxVersion = "1.7.0"
+val libgdxVersion = "1.9.8"
 
 lazy val sharedSettings: Seq[Def.Setting[_]] = Seq(
   name := "centillus",
@@ -19,7 +19,8 @@ lazy val sharedSettings: Seq[Def.Setting[_]] = Seq(
   },
   libraryDependencies ++= Seq(
     "com.badlogicgames.gdx" % "gdx" % libgdxVersion,
-    "org.scala-lang.modules" %% "scala-parser-combinators" % "1.1.0"
+    "org.scala-lang.modules" %% "scala-parser-combinators" % "1.1.0",
+    "com.badlogicgames.gdx" % "gdx-freetype" % libgdxVersion
   ),
   javacOptions ++= Seq(
     "-Xlint",
@@ -51,7 +52,8 @@ lazy val desktop = project in file("desktop") settings (sharedSettings: _*) depe
     libraryDependencies ++= Seq(
       "net.sf.proguard" % "proguard-base" % "5.1" % "provided",
       "com.badlogicgames.gdx" % "gdx-backend-lwjgl" % libgdxVersion,
-      "com.badlogicgames.gdx" % "gdx-platform" % libgdxVersion classifier "natives-desktop"
+      "com.badlogicgames.gdx" % "gdx-platform" % libgdxVersion classifier "natives-desktop",
+      "com.badlogicgames.gdx" % "gdx-freetype-platform" % libgdxVersion classifier "natives-desktop"
     ),
     fork in Compile := true,
     baseDirectory in run := assetsDirectory.value,

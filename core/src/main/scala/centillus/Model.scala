@@ -40,6 +40,7 @@ class Model {
   type Time = Long
   type Data = Seq[(Time, Id)]
   var dataMap = MMap.empty[Bar, MMap[Chan, MSeq[Data]]]
+  private var maxbar = 0
 
   // parse the source bms file and load obtained ASTs to the inner DB.
   // header information and sequence data may be stored separately.
@@ -80,6 +81,7 @@ class Model {
     case WAV(number, filename) => { wavPathMap += (number -> filename) }
     case BMP(number, filename) => { bmpPathMap += (number -> filename) }
     case Data(bar, chan, objs) => {
+      if (maxbar < bar) maxbar = bar + 1
       val chanMap = dataMap.getOrElseUpdate(bar, MMap.empty[Chan, MSeq[Data]])
       // chanMap(chan) = readObjs(objs)
       var dataSeq = chanMap.getOrElseUpdate(chan, MSeq())
@@ -135,4 +137,9 @@ class Model {
     manager.get(path, classOf[Texture])
   }
   def getStageFile(): Texture = stagefileTexture
+  def getMaxbar() = maxbar
+
+  def dispose() = {
+    manager.dispose()
+  }
 }

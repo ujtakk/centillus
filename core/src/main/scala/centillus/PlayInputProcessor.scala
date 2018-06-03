@@ -6,22 +6,23 @@ import com.badlogic.gdx.Input.Keys
 class PlayInputProcessor(val game: Centillus, val screen: PlayScreen)
 extends InputProcessor {
   override def keyDown(keycode: Int): Boolean = {
-    keycode match {
-      case Keys.A =>
-      case Keys.S =>
-      case Keys.D =>
-      case Keys.F =>
-      case Keys.SPACE =>
-      case Keys.J =>
-      case Keys.K =>
-      case Keys.L =>
-      case Keys.SEMICOLON =>
-      case Keys.ENTER =>
-      case _ =>
+    val (pos, speed): (Float, Float) = keycode match {
+      case Keys.SPACE => game.playNote(0)
+      case Keys.A => game.playNote(1)
+      case Keys.S => game.playNote(2)
+      case Keys.D => game.playNote(3)
+      case Keys.F => game.playNote(4)
+      case Keys.J => game.playNote(5)
+      case Keys.K => game.playNote(6)
+      case Keys.L => game.playNote(7)
+      case Keys.SEMICOLON => return false
+      case Keys.ENTER => return false
+      case _ => return false
     }
-    // val result = game.judgeInput(keycode)
-    // screen.setJudge(result)
-    return false
+
+    game.judgeInput(pos, speed)
+
+    return true
   }
 
   override def keyUp(keycode: Int): Boolean = {
