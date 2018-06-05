@@ -39,8 +39,8 @@ class Model {
   type Chan = Int
   type Time = Long
   type Data = Seq[(Time, Id)]
-  var dataMap = MMap.empty[Bar, MMap[Chan, MSeq[Data]]]
-  private var maxbar = 0
+  type DataMap = MMap[Chan, MSeq[Data]]
+  var dataMap = MMap.empty[Bar, DataMap]
 
   // parse the source bms file and load obtained ASTs to the inner DB.
   // header information and sequence data may be stored separately.
@@ -81,15 +81,20 @@ class Model {
     case WAV(number, filename) => { wavPathMap += (number -> filename) }
     case BMP(number, filename) => { bmpPathMap += (number -> filename) }
     case Data(bar, chan, objs) => {
-      if (maxbar < bar) maxbar = bar + 1
       val chanMap = dataMap.getOrElseUpdate(bar, MMap.empty[Chan, MSeq[Data]])
       // chanMap(chan) = readObjs(objs)
-      var dataSeq = chanMap.getOrElseUpdate(chan, MSeq())
-      chanMap(chan) = dataSeq :+ readObjs(objs)
+      val dataSeq = chanMap.getOrElseUpdate(chan, MSeq())
+      chanMap(chan) = dataSeq :+ readObjs(bar, chan, objs)
     }
   }
 
-  def readObjs(objs: String): Seq[(Time, Id)] = {
+  val laneChan = Seq(16, 11, 12, 13, 14, 15, 18, 19)
+  private var maxBar = 0
+  private var totalNotes = 0
+  def readObjs(bar: Int, chan: Int, objs: String): Seq[(Time, Id)] = {
+    if (maxBar < bar)
+      maxBar = bar + 1
+
     if (objs.contains(".")) {
       val time: Time = 0
       return Seq((time, objs))
@@ -103,6 +108,8 @@ class Model {
       val pos: Double = i/2.0
       val time: Time = (noteNanos * pos).toLong
       val body: Id = objs.substring(i, i+2)
+      if (laneChan.contains(chan) && body != "00")
+        totalNotes += 1
       (time, body)
     })
   }
@@ -117,7 +124,7 @@ class Model {
   def loadImages() = {
     for ((_, filename) <- bmpPathMap) {
       val path = Paths.get(prefix, filename).toString()
-      manager.load(path, classOf[Texture])
+      // manager.load(path, classOf[Texture])
     }
   }
 
@@ -137,7 +144,8 @@ class Model {
     manager.get(path, classOf[Texture])
   }
   def getStageFile(): Texture = stagefileTexture
-  def getMaxbar() = maxbar
+  def getMaxBar() = maxBar
+  def getTotalNotes() = totalNotes
 
   def dispose() = {
     manager.dispose()

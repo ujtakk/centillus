@@ -18,8 +18,15 @@ class ResultScreen(final val game: Centillus) extends Screen {
     Gdx.gl.glClearColor(0f, 0f, 0f, 1f)
     Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT)
 
+    val totalNotes = game.fetchTotalNotes()
+    val maxCombo = game.getMaxCombo()
+    val stageScore = game.calcScore()
     val result = game.getResult()
     val resultStr = f"""
+    STAGE SCORE: $stageScore%6d
+    TOTAL NOTES: $totalNotes%4d
+    MAX COMBO:   $maxCombo%4d
+
     PERFECT: ${result(0)}%5d
     GREAT:   ${result(1)}%5d
     GOOD:    ${result(2)}%5d
@@ -28,8 +35,11 @@ class ResultScreen(final val game: Centillus) extends Screen {
     """
     game.makeFont("ffffff", resultStr, 200.0f, 500.0f)
 
+    val playRank = game.calcRank()
+    game.makeFont("ffffff", playRank, 400.0f, 550.0f)
+
     if (Gdx.input.isKeyPressed(Keys.ENTER))
-      Gdx.app.exit()
+      game.setScreen(new PlayScreen(game))
   }
 
   override def resize(x: Int, y: Int): Unit = {

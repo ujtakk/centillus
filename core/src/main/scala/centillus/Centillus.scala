@@ -12,17 +12,39 @@ import com.badlogic.gdx.graphics.{
   Texture
 }
 import com.badlogic.gdx.graphics.g2d.{ SpriteBatch
-                                     , BitmapFont
                                      }
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType
 import com.badlogic.gdx.utils.ObjectMap
+import com.badlogic.gdx.utils.{ Array
+                              , Queue
+                              , TimeUtils
+                              }
 
 class Centillus(val bmsPath: String) extends Game {
   lazy val batch = new SpriteBatch
   lazy val shape = new ShapeRenderer
   lazy val model = new Model
+
+  val fps: Float = 60.0f
+  val whole: Float = 1.0f
+  val hispeed: Float = 2.0f
+  val speed: Float = hispeed * whole/fps
+  def getWhole() = speed
+  def getSpeed() = speed
+  def getFPS() = fps
+  val whiteN: Int = 4
+  val blackN: Int = 3
+  val laneNum = whiteN + blackN
+  def getLaneNum() = laneNum
+  var barData: model.DataMap = null
+  val randLane = 0 :: scala.util.Random.shuffle((1 to laneNum).toList)
+
+  val notes = new Array[Queue[Note]](true, laneNum+1)
+  for (i <- 1 to laneNum+1)
+      notes.add(new Queue[Note])
+  val notesBGM = new Array[Note]
 
   override def create(): Unit = {
     model.readBMS(bmsPath)
@@ -41,25 +63,33 @@ class Centillus(val bmsPath: String) extends Game {
   }
 
   def isLoadingEnd() = model.updateManager()
-  def isPlayingEnd(bar: Int) = bar > model.getMaxbar() + 1
+  def isPlayingEnd() = barCount > model.getMaxBar() + 1
 
-  def canFetchData(barCount: Int) = model.hasData(barCount)
-  def fetchData(barCount: Int) = model.getData(barCount)
-  def fetchBPM(barCount: Int) = model.getBPM(barCount)
+  def canFetchData() = model.hasData(barCount)
+  def fetchData() = model.getData(barCount)
+  def fetchBPM() = model.getBPM(barCount)
+  def fetchTotalNotes() = model.getTotalNotes()
   def fetchSound(number: String) = model.getSound(number)
   def fetchImage(number: String): Texture = model.getImage(number)
   def fetchStageFile() = model.getStageFile()
 
+  var maxCombo: Int = 0
   var combo: Int = 0
   var judge: Judgement = Space
   var result = ArrayBuffer(0, 0, 0, 0, 0)
   def judgeInput(pos: Float, speed: Float) = {
+    val perfectPos =  2*speed
+    val greatPos   =  4*speed
+    val goodPos    =  8*speed
+    val badPos     = 12*speed
+    val poorPos    = 16*speed
+    // println(pos, perfectPos, greatPos, goodPos, badPos, poorPos)
     judge = pos match {
-      case p if - 2*speed < p && p <  2*speed => {result(0) += 1; Perfect}
-      case p if - 4*speed < p && p <  4*speed => {result(1) += 1; Great}
-      case p if - 8*speed < p && p <  8*speed => {result(2) += 1; Good}
-      case p if -16*speed < p && p < 16*speed => {result(3) += 1; Bad}
-      case p if -32*speed < p && p < 32*speed => {result(4) += 1; Poor}
+      case p if -perfectPos < p && p < perfectPos => {result(0) += 1; Perfect}
+      case p if -  greatPos < p && p <   greatPos => {result(1) += 1; Great}
+      case p if -   goodPos < p && p <    goodPos => {result(2) += 1; Good}
+      case p if -    badPos < p && p <     badPos => {result(3) += 1; Bad}
+      case p if -   poorPos < p && p <    poorPos => {result(4) += 1; Poor}
       case _ => Space
     }
 
@@ -68,7 +98,35 @@ class Centillus(val bmsPath: String) extends Game {
       case Space => combo
       case _ => 0
     }
+
+    if (maxCombo < combo)
+      maxCombo = combo
+
+    updateScore(combo, judge)
   }
+
+  def calcScore() = comboScore + judgeScore
+  var comboScore: Int = 0
+  var judgeScore: Int = 0
+  def updateScore(combo: Int, judge: Judgement) = {
+    val totalNotes: Int = fetchTotalNotes()
+    val comboCoef: Int = 50000 / (10 * totalNotes - 55)
+    comboScore += (combo match {
+      case _ if combo < 2 => 0
+      case _ if combo < 11 => (combo-1) * comboCoef
+      case _ => 10 * comboCoef
+    })
+    judgeScore += (judge match {
+      case Perfect => 150000 / totalNotes
+      case Great => 100000 / totalNotes
+      case Good => 20000 / totalNotes
+      case Bad => 0
+      case Poor => 0
+      case Space => 0
+    })
+  }
+
+  def getMaxCombo() = maxCombo
   def getCombo() = combo
   def getJudge() = judge
   def getResult() = result
@@ -131,4 +189,125 @@ class Centillus(val bmsPath: String) extends Game {
   }
 
   def setNote(lane: Int, note: Note) = noteMap.put(lane, note)
+
+  def updateNotes() = {
+    for (lane <- 0 to laneNum) {
+      val noteChan = notes.get(lane)
+      val iter = noteChan.iterator()
+      while (iter.hasNext()) {
+        val note = iter.next()
+        note.update()
+      }
+      if (noteChan.size != 0) {
+        setNote(lane, noteChan.first)
+        val noteFirst = noteChan.first()
+        if (noteFirst.getPos() < -16*speed) {
+          // noteFirst.play()
+          noteChan.removeFirst()
+        }
+      }
+      // val iter = notes.get(lane).iterator()
+      // while (iter.hasNext()) {
+      //   note.update()
+      //   if (notePos <= 0.0f) {
+      //     note.play()
+      //     iter.remove()
+      //   }
+      // }
+    }
+    val iter = notesBGM.iterator()
+    while (iter.hasNext()) {
+      val note = iter.next()
+      val notePos = note.getPos()
+      note.update()
+      if (notePos <= 0.0f) {
+        note.play(0.5f)
+        iter.remove()
+      }
+    }
+  }
+
+  private def bpm = fetchBPM()
+  var baseTime: Long = 0
+  def barTime: Long = (240.0 * 1e9 / bpm).toLong
+  val laneTime: Float = (whole/speed) * (1e9f/fps)
+  var barCount: Int = -1
+
+  def barStart(): Boolean = {
+    if (baseTime == 0) {
+      baseTime = TimeUtils.nanoTime()
+      return true
+    }
+
+    val currTime = TimeUtils.nanoTime()
+    if (currTime - baseTime > barTime) {
+      baseTime = currTime
+      return true
+    }
+
+    return false
+  }
+
+  def makeBar() = {
+    barData = fetchData()
+
+    val laneChan = Seq(16, 11, 12, 13, 14, 15, 18, 19)
+    for ((chan, laneSeed) <- laneChan.zipWithIndex) {
+      val lane = randLane(laneSeed)
+      if (barData.contains(chan)) {
+        val chanData = barData(chan)(0)
+        val noteChan = notes.get(lane)
+        for ((targetTime, targetChan) <- chanData) {
+          if (targetChan != "00") {
+            val laneTime = (whole/speed) * (1e9f/fps)
+            val ratio: Float = barTime.toFloat / laneTime.toFloat
+            val offset: Float = ratio + targetTime.toFloat / barTime.toFloat * ratio
+            val sample = fetchSound(targetChan)
+            noteChan.addLast(new Note(sample, speed, offset))
+          }
+        }
+        setNote(lane, noteChan.first)
+      }
+    }
+    val chorusChan = 1
+    if (barData.contains(chorusChan)) {
+      val chorusDataSeq = barData(chorusChan)
+      for (chorusDataIdx <- 0 until chorusDataSeq.length) {
+        val chorusData = chorusDataSeq(chorusDataIdx)
+        for ((targetTime, targetChorus) <- chorusData) {
+          if (targetChorus != "00") {
+            val laneTime = (whole/speed) * (1e9f/fps)
+            val ratio: Float = barTime.toFloat / laneTime.toFloat
+            val offset: Float = ratio + targetTime.toFloat / barTime.toFloat * ratio
+            val sample = fetchSound(targetChorus)
+            notesBGM.add(new Note(sample, speed, offset))
+          }
+        }
+      }
+    }
+  }
+
+  def updateBar() = {
+    barCount += 1
+    if (canFetchData()) {
+      makeBar()
+    }
+  }
+
+  def calcRank(): String = {
+    val totalNotes: Int = fetchTotalNotes()
+    val totalScore: Float = 2.0f * totalNotes
+    val resultScore: Float = 2.0f * result(0) + 1.0f * result(1)
+
+    resultScore match {
+      case _ if 8.0f/9.0f * totalScore < resultScore => "AAA"
+      case _ if 7.0f/9.0f * totalScore < resultScore => "AA"
+      case _ if 6.0f/9.0f * totalScore < resultScore => "A"
+      case _ if 5.0f/9.0f * totalScore < resultScore => "B"
+      case _ if 4.0f/9.0f * totalScore < resultScore => "C"
+      case _ if 3.0f/9.0f * totalScore < resultScore => "D"
+      case _ if 2.0f/9.0f * totalScore < resultScore => "E"
+      case _ => "F"
+    }
+  }
 }

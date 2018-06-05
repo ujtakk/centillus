@@ -13,6 +13,7 @@ object Main extends App {
   // val path = "nm23_nm05/littlehearts(bt4god).bme"
   // val path = "マイアミベース/miamibass.bms"
   // val path = "elegante/02_hyper.bme"
+  // val path = "air/air7light.bme"
   val cfg = new LwjglApplicationConfiguration
   cfg.title = "Centillus"
   cfg.foregroundFPS = 60

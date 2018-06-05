@@ -3,14 +3,10 @@ package centillus
 import com.badlogic.gdx.{ Screen
                         , Gdx
                         }
-import com.badlogic.gdx.audio.{ Sound
-                              }
 import com.badlogic.gdx.graphics.{ Texture
                                  , Pixmap
                                  }
-import com.badlogic.gdx.utils.{ Array
-                              , Queue
-                              , TimeUtils
+import com.badlogic.gdx.utils.{ TimeUtils
                               }
 
 class PlayScreen(final val game: Centillus) extends Screen {
@@ -19,8 +15,6 @@ class PlayScreen(final val game: Centillus) extends Screen {
 
   val width: Float = Gdx.graphics.getWidth().toFloat
   val height: Float = Gdx.graphics.getHeight().toFloat
-
-  private def bpm = game.fetchBPM(barCount)
 
   override def dispose(): Unit = {
   }
@@ -31,64 +25,32 @@ class PlayScreen(final val game: Centillus) extends Screen {
   override def pause(): Unit = {
   }
 
-  val whiteN: Int = 4
   val whiteW: Float = 44
   val whiteH: Float = 10
-  val blackN: Int = 3
   val blackW: Float = 36
   val blackH: Float = 10
   val redW: Float = 80
   val redH: Float = 10
-  val laneNum = whiteN + blackN
+  val laneNum = game.getLaneNum()
   val laneLen: Float = 512
   val judgeW: Float = 3*blackW + 4*whiteW + redW
   val judgeH: Float = 1
   // val leftSide = true
   val leftSide = false
+  def isLeftSide() = leftSide
 
-  val fps: Float = 60.0f
-  val whole: Float = 1.0f
-  val speed: Float = 2.0f/60.0f
-  val notes = new Array[Queue[Note]](true, laneNum+1)
-  for (i <- 1 to laneNum+1)
-      notes.add(new Queue[Note])
-  val notesBGM = new Array[Note]
-  var baseTime: Long = 0
-  def barTime: Long = (240.0 * 1e9 / bpm).toLong
-  val laneTime: Float = (whole/speed) * (1e9f/fps)
-  var barLinePos: Float = barTime.toFloat / laneTime.toFloat
+  val fps = game.getFPS()
+  val whole = game.getWhole()
+  val speed = game.getSpeed()
+  def bpm = game.fetchBPM()
 
-  var barCount: Int = 0
-  var barData =
-    if (game.canFetchData(barCount))
-      game.fetchData(barCount)
-    else
-      null
-
-  def barStart(): Boolean = {
-    if (baseTime == 0) {
-      baseTime = TimeUtils.nanoTime()
-      return true
-    }
-
-    val currTime = TimeUtils.nanoTime()
-    if (currTime - baseTime > barTime) {
-      baseTime = currTime
-      return true
-    }
-
-    return false
-  }
+  var barLinePos: Float = game.barTime.toFloat / game.laneTime.toFloat
 
   override def render(x: Float): Unit = {
-    if (barStart) {
-      barCount += 1
-      barLinePos = barTime.toFloat / laneTime.toFloat
-      if (game.canFetchData(barCount)) {
-        barData = game.fetchData(barCount)
-        makeBar()
-      }
-      else if (game.isPlayingEnd(barCount)) {
+    if (game.barStart()) {
+      barLinePos = game.barTime.toFloat / game.laneTime.toFloat
+      game.updateBar()
+      if (game.isPlayingEnd()) {
         game.setScreen(new ResultScreen(game))
       }
     }
@@ -99,7 +61,7 @@ class PlayScreen(final val game: Centillus) extends Screen {
     // drawAnime()
     drawJudge()
     // drawGauge()
-    // drawScore()
+    drawScore()
 
     // if (barCount == 6)
     //   Gdx.app.exit()
@@ -121,7 +83,8 @@ class PlayScreen(final val game: Centillus) extends Screen {
   }
 
   def drawBackground() = {
-    game.makeRect("808080", 0, 0, width, height)
+    // game.makeRect("808080", 0, 0, width, height)
+    game.makeRect("000000", 0, 0, width, height)
   }
 
   // def drawLanes() = {
@@ -170,64 +133,19 @@ class PlayScreen(final val game: Centillus) extends Screen {
     game.makeLine("00ff00", laneX, laneY, laneX-judgeW, laneY, judgeH)
   }
 
-  // def playChorus() = {
-  //   val chorusChan = 1
-  //   if (barData.contains(chorusChan)) {
-  //     val currTime = TimeUtils.timeSinceNanos(baseTime)
-  //     val chorusDataSeq = barData(chorusChan)
-  //     for (chorusDataIdx <- 0 until chorusDataSeq.length) {
-  //       val chorusData = chorusDataSeq(chorusDataIdx)
-  //       val (targetTime, targetChorus) = chorusData.head
-  //       if (targetTime < currTime) {
-  //         barData(chorusChan)(chorusDataIdx) = chorusData.tail
-  //         if (targetChorus != "00") {
-  //           val sample = game.fetchSound(targetChorus)
-  //           notes.add(new Note(-1, sample, speed))
-  //         }
-  //       }
-  //     }
-  //   }
-  // }
-
   def drawNotes() = {
-    updateNotes()
     drawBarLine()
-  }
-
-  def makeBar() = {
-    val laneChan = Seq(16, 11, 12, 13, 14, 15, 18, 19)
-    for ((chan, lane) <- laneChan.zipWithIndex) {
-      if (barData.contains(chan)) {
-        val chanData = barData(chan)(0)
-        val noteChan = notes.get(lane)
-        for ((targetTime, targetChan) <- chanData) {
-          if (targetChan != "00") {
-            val laneTime = (whole/speed) * (1e9f/fps)
-            val ratio: Float = barTime.toFloat / laneTime.toFloat
-            val offset: Float = ratio + targetTime.toFloat / barTime.toFloat * ratio
-            val sample = game.fetchSound(targetChan)
-            noteChan.addLast(new Note(sample, speed, offset))
-          }
-        }
-        game.setNote(lane, noteChan.first)
+    for (lane <- 0 to laneNum) {
+      val noteChan = game.notes.get(lane)
+      val iter = noteChan.iterator()
+      while (iter.hasNext()) {
+        val note = iter.next()
+        val notePos = note.getPos()
+        if (0.0f < notePos && notePos < 1.0f)
+          drawNote(lane, notePos)
       }
     }
-    val chorusChan = 1
-    if (barData.contains(chorusChan)) {
-      val chorusDataSeq = barData(chorusChan)
-      for (chorusDataIdx <- 0 until chorusDataSeq.length) {
-        val chorusData = chorusDataSeq(chorusDataIdx)
-        for ((targetTime, targetChorus) <- chorusData) {
-          if (targetChorus != "00") {
-            val laneTime = (whole/speed) * (1e9f/fps)
-            val ratio: Float = barTime.toFloat / laneTime.toFloat
-            val offset: Float = ratio + targetTime.toFloat / barTime.toFloat * ratio
-            val sample = game.fetchSound(targetChorus)
-            notesBGM.add(new Note(sample, speed, offset))
-          }
-        }
-      }
-    }
+    game.updateNotes()
   }
 
   def drawBarLine() = {
@@ -236,54 +154,9 @@ class PlayScreen(final val game: Centillus) extends Screen {
       game.makeLine("ffffff", laneX, laneY+barPos, laneX+judgeW, laneY+barPos, 1.0f)
     }
 
-    barLinePos -= speed
+    barLinePos -= game.getSpeed()
     // if (barLinePos < 0.0f)
     //   barLinePos = barTime.toFloat / laneTime.toFloat - speed
-  }
-
-  def updateNotes() = {
-    for (lane <- 0 to laneNum) {
-      val noteChan = notes.get(lane)
-      val iter = noteChan.iterator()
-      while (iter.hasNext()) {
-        val note = iter.next()
-        val notePos = note.getPos()
-        if (0.0f < notePos && notePos < 1.0f)
-          drawNote(lane, notePos)
-        note.update()
-      }
-      if (noteChan.size != 0) {
-        val noteFirst = noteChan.first()
-        if (noteFirst.getPos() < -16*speed) {
-          // noteFirst.play()
-          noteChan.removeFirst()
-          if (noteChan.size != 0)
-            game.setNote(lane, noteChan.first)
-        }
-      }
-      // val iter = notes.get(lane).iterator()
-      // while (iter.hasNext()) {
-      //   val note = iter.next()
-      //   val notePos = note.getPos()
-      //   if (0.0f < notePos && notePos < 1.0f)
-      //     drawNote(lane, notePos)
-      //   note.update()
-      //   if (notePos <= 0.0f) {
-      //     note.play()
-      //     iter.remove()
-      //   }
-      // }
-    }
-    val iter = notesBGM.iterator()
-    while (iter.hasNext()) {
-      val note = iter.next()
-      val notePos = note.getPos()
-      note.update()
-      if (notePos <= 0.0f) {
-        note.play(0.5f)
-        iter.remove()
-      }
-    }
   }
 
   val laneX: Float = 44
@@ -351,17 +224,17 @@ class PlayScreen(final val game: Centillus) extends Screen {
   var cacheImage: Texture = new Texture(animeW.toInt, animeH.toInt,
                                         Pixmap.Format.RGB888)
   def drawAnime() = {
-    if (barData.contains(animeChan)) {
-      val currTime = TimeUtils.timeSinceNanos(baseTime)
-      val animeData = barData(animeChan)(0)
-      val (targetTime, targetBGA) = animeData.head
-      if (targetTime < currTime) {
-        barData(animeChan)(0) = animeData.tail
-        if (targetBGA != "00") {
-          cacheImage = game.fetchImage(targetBGA)
-        }
-      }
-    }
+    // if (game.barData.contains(animeChan)) {
+    //   val currTime = TimeUtils.timeSinceNanos(baseTime)
+    //   val animeData = game.barData(animeChan)(0)
+    //   val (targetTime, targetBGA) = animeData.head
+    //   if (targetTime < currTime) {
+    //     game.barData(animeChan)(0) = animeData.tail
+    //     if (targetBGA != "00") {
+    //       cacheImage = game.fetchImage(targetBGA)
+    //     }
+    //   }
+    // }
     game.drawImage(cacheImage, animeX, animeY, animeW, animeH)
   }
 
@@ -386,6 +259,13 @@ class PlayScreen(final val game: Centillus) extends Screen {
   def drawGauge() = {
   }
 
-  def drawBar() = {
+  def drawScore() = {
+    val score = game.calcScore()
+    val maxCombo = game.getMaxCombo()
+    val scoreStr = f"""
+      SCORE:     $score%6d
+      MAX COMBO: $maxCombo%6d
+    """
+    game.makeFont("ffffff", scoreStr, 400.0f, 400.0f)
   }
 }
