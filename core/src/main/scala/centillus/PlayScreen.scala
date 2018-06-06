@@ -87,23 +87,30 @@ class PlayScreen(final val game: Centillus) extends Screen {
     game.makeRect("000000", 0, 0, width, height)
   }
 
-  // def drawLanes() = {
-  //   var laneX: Float = 44
-  //   val laneY: Float = 44
-  //   game.makeRect("000000", laneX, laneY, redW, laneLen, "ffffff")
-  //   laneX += redW
-  //   for (i <- 1 to laneNum/2) {
-  //     game.makeRect("181818", laneX, laneY, whiteW, laneLen, "ffffff")
-  //     laneX += whiteW
-  //     game.makeRect("000000", laneX, laneY, blackW, laneLen, "ffffff")
-  //     laneX += blackW
-  //   }
-  //   game.makeRect("181818", laneX, laneY, whiteW, laneLen, "ffffff")
-  //   laneX += whiteW
-  //   game.makeLine("00ff00", laneX, laneY, laneX-judgeW, laneY, judgeH)
-  // }
+  def drawLanes() = drawLanes_cent()
+  def drawLanes_iidx() = {
+    var laneX: Float = 44
+    val laneY: Float = 44
+    if (leftSide) {
+      game.makeRect("000000", laneX, laneY, redW, laneLen, "ffffff")
+      laneX += redW
+    }
+    for (i <- 1 to laneNum/2) {
+      game.makeRect("181818", laneX, laneY, whiteW, laneLen, "ffffff")
+      laneX += whiteW
+      game.makeRect("000000", laneX, laneY, blackW, laneLen, "ffffff")
+      laneX += blackW
+    }
+    game.makeRect("181818", laneX, laneY, whiteW, laneLen, "ffffff")
+    laneX += whiteW
+    if (!leftSide) {
+      game.makeRect("000000", laneX, laneY, redW, laneLen, "ffffff")
+      laneX += redW
+    }
+    game.makeLine("00ff00", laneX, laneY, laneX-judgeW, laneY, judgeH)
+  }
 
-  def drawLanes() = {
+  def drawLanes_cent() = {
     var laneX: Float = 44
     val laneY: Float = 44
     game.makeRect("181818", laneX, laneY, whiteW, laneLen, "ffffff")
@@ -161,30 +168,31 @@ class PlayScreen(final val game: Centillus) extends Screen {
 
   val laneX: Float = 44
   val laneY: Float = 44
-  // private def drawNote(noteLane: Int, notePos: Float): Unit =
-  //   noteLane match {
-  //     case 0 => {
-  //       val redPos = if (leftSide) laneX else laneX+judgeW-redW
-  //       game.makeRect("ff0000", redPos, laneY+notePos*laneLen, redW, redH)
-  //     }
-  //     case 1 | 3 | 5 | 7 => {
-  //       val whitePos = if (leftSide)
-  //                        laneX+redW+((noteLane-1)/2)*(whiteW+blackW)
-  //                      else
-  //                        laneX+((noteLane-1)/2)*(whiteW+blackW)
-  //       game.makeRect("ffffff", whitePos, laneY+notePos*laneLen, whiteW, whiteH)
-  //     }
-  //     case 2 | 4 | 6 => {
-  //       val blackPos =
-  //         if (leftSide)
-  //           laneX+redW+((noteLane-1)/2)*(whiteW+blackW)+whiteW
-  //         else
-  //           laneX+((noteLane-1)/2)*(whiteW+blackW)+whiteW
-  //       game.makeRect("0000ff", blackPos, laneY+notePos*laneLen, blackW, blackH)
-  //     }
-  //     case _ =>
-  //   }
-  private def drawNote(noteLane: Int, notePos: Float): Unit =
+  def drawNote(noteLane: Int, notePos: Float) = drawNote_cent(noteLane, notePos)
+  private def drawNote_iidx(noteLane: Int, notePos: Float) =
+    noteLane match {
+      case 0 => {
+        val redPos = if (leftSide) laneX else laneX+judgeW-redW
+        game.makeRect("ff0000", redPos, laneY+notePos*laneLen, redW, redH)
+      }
+      case 1 | 3 | 5 | 7 => {
+        val whitePos = if (leftSide)
+                         laneX+redW+((noteLane-1)/2)*(whiteW+blackW)
+                       else
+                         laneX+((noteLane-1)/2)*(whiteW+blackW)
+        game.makeRect("ffffff", whitePos, laneY+notePos*laneLen, whiteW, whiteH)
+      }
+      case 2 | 4 | 6 => {
+        val blackPos =
+          if (leftSide)
+            laneX+redW+((noteLane-1)/2)*(whiteW+blackW)+whiteW
+          else
+            laneX+((noteLane-1)/2)*(whiteW+blackW)+whiteW
+        game.makeRect("0000ff", blackPos, laneY+notePos*laneLen, blackW, blackH)
+      }
+      case _ =>
+    }
+  private def drawNote_cent(noteLane: Int, notePos: Float) =
     noteLane match {
       case 0 => {
         val redPos = if (leftSide) laneX + 2*whiteW + blackW
@@ -250,6 +258,7 @@ class PlayScreen(final val game: Centillus) extends Screen {
       case Good => "GOOD"
       case Bad => "BAD"
       case Poor => "POOR"
+      case Miss => "POOR"
       case Space => return
     }
 

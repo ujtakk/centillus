@@ -2,9 +2,15 @@ package centillus
 
 import com.badlogic.gdx.audio.Sound
 
-class Note(val sample: Sound, var speed: Float, val offset: Float) {
+class Note( val lane: Int
+          , val sample: Sound
+          , var speed: Float
+          , val offset: Float
+          ) {
   var pos: Float = offset
   def getPos() = pos
+  def getLane() = lane
+  def getSpeed() = speed
 
   var hitFlag: Boolean = false
   def hit() = {
@@ -21,8 +27,7 @@ class Note(val sample: Sound, var speed: Float, val offset: Float) {
     //   pos = 0.0f
   }
 
-  def play(volume: Float = 0.5f): (Float, Float) = {
+  def play(volume: Float = 0.5f) = {
     sample.play(volume)
-    return (pos, speed)
   }
 }

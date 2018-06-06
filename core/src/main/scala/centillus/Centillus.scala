@@ -39,7 +39,7 @@ class Centillus(val bmsPath: String) extends Game {
   val laneNum = whiteN + blackN
   def getLaneNum() = laneNum
   var barData: model.DataMap = null
-  val randLane = 0 :: scala.util.Random.shuffle((1 to laneNum).toList)
+  var randLane = 0 :: scala.util.Random.shuffle((1 to laneNum).toList)
 
   val notes = new Array[Queue[Note]](true, laneNum+1)
   for (i <- 1 to laneNum+1)
@@ -75,16 +75,21 @@ class Centillus(val bmsPath: String) extends Game {
 
   var maxCombo: Int = 0
   var combo: Int = 0
+  var comboBreak: Int = 0
   var judge: Judgement = Space
   var result = ArrayBuffer(0, 0, 0, 0, 0)
-  def judgeInput(pos: Float, speed: Float) = {
+  def judgeInput(note: Note, missed: Boolean = false) = {
+    val lane = note.getLane()
+    val pos = note.getPos()
+    val speed = note.getSpeed()
+
     val perfectPos =  2*speed
     val greatPos   =  4*speed
     val goodPos    =  8*speed
     val badPos     = 12*speed
     val poorPos    = 16*speed
-    // println(pos, perfectPos, greatPos, goodPos, badPos, poorPos)
     judge = pos match {
+      case p if missed => {result(4) += 1; Miss}
       case p if -perfectPos < p && p < perfectPos => {result(0) += 1; Perfect}
       case p if -  greatPos < p && p <   greatPos => {result(1) += 1; Great}
       case p if -   goodPos < p && p <    goodPos => {result(2) += 1; Good}
@@ -95,12 +100,17 @@ class Centillus(val bmsPath: String) extends Game {
 
     combo = judge match {
       case Perfect | Great | Good => combo + 1
-      case Space => combo
-      case _ => 0
+      case Poor | Space => combo
+      case Bad | Miss => {comboBreak += 1; 0}
     }
 
     if (maxCombo < combo)
       maxCombo = combo
+
+    judge match {
+      case Perfect | Great | Good | Bad | Miss => notes.get(lane).removeFirst()
+      case _ =>
+    }
 
     updateScore(combo, judge)
   }
@@ -122,12 +132,14 @@ class Centillus(val bmsPath: String) extends Game {
       case Good => 20000 / totalNotes
       case Bad => 0
       case Poor => 0
+      case Miss => 0
       case Space => 0
     })
   }
 
   def getMaxCombo() = maxCombo
   def getCombo() = combo
+  def getComboBreak() = comboBreak
   def getJudge() = judge
   def getResult() = result
 
@@ -162,7 +174,7 @@ class Centillus(val bmsPath: String) extends Game {
   lazy val fontFile = Gdx.files.internal("fonts/UbuntuMono-Regular.ttf")
   lazy val fontGen = new FreeTypeFontGenerator(fontFile)
   lazy val param = new FreeTypeFontGenerator.FreeTypeFontParameter
-  param.size = 48
+  param.size = 32
   param.color = Color.valueOf("ffffff")
   lazy val font = fontGen.generateFont(param)
   def makeFont(color: String, str: String, x: Float, y: Float) = {
@@ -179,13 +191,24 @@ class Centillus(val bmsPath: String) extends Game {
 
   val noteMap = new ObjectMap[Int, Note]
   // playNote)
-  def playNote(lane: Int): (Float, Float) = {
+  def playNote(lane: Int): Note = {
+    // val note = noteMap.get(lane, null)
+    // if (note == null) {
+    //   return null
+    // }
     val note = noteMap.get(lane, null)
-    if (note == null) {
-      return (1.0f, -1.0f)
+    if (note != null)
+      note.play()
+
+    val noteChan = notes.get(lane)
+    if (noteChan.size == 0) {
+      return null
     }
 
-    return note.play()
+    // val note = noteChan.first()
+    // note.play()
+
+    return note
   }
 
   def setNote(lane: Int, note: Note) = noteMap.put(lane, note)
@@ -201,9 +224,12 @@ class Centillus(val bmsPath: String) extends Game {
       if (noteChan.size != 0) {
         setNote(lane, noteChan.first)
         val noteFirst = noteChan.first()
+        // if (noteFirst.getPos() < 0.0f) {
+        //   noteFirst.play()
+        // }
         if (noteFirst.getPos() < -16*speed) {
           // noteFirst.play()
-          noteChan.removeFirst()
+          judgeInput(noteFirst, missed=true)
         }
       }
       // val iter = notes.get(lane).iterator()
@@ -230,8 +256,22 @@ class Centillus(val bmsPath: String) extends Game {
   private def bpm = fetchBPM()
   var baseTime: Long = 0
   def barTime: Long = (240.0 * 1e9 / bpm).toLong
-  val laneTime: Float = (whole/speed) * (1e9f/fps)
+  def laneTime: Float = (whole/speed) * (1e9f/fps)
   var barCount: Int = -1
+
+  def barReset() = {
+    barData = null
+    barCount = -1
+    baseTime = 0
+    maxCombo = 0
+    combo = 0
+    comboBreak = 0
+    judge = Space
+    result = ArrayBuffer(0, 0, 0, 0, 0)
+    comboScore = 0
+    judgeScore = 0
+    randLane = 0 :: scala.util.Random.shuffle((1 to laneNum).toList)
+  }
 
   def barStart(): Boolean = {
     if (baseTime == 0) {
@@ -263,7 +303,7 @@ class Centillus(val bmsPath: String) extends Game {
             val ratio: Float = barTime.toFloat / laneTime.toFloat
             val offset: Float = ratio + targetTime.toFloat / barTime.toFloat * ratio
             val sample = fetchSound(targetChan)
-            noteChan.addLast(new Note(sample, speed, offset))
+            noteChan.addLast(new Note(lane, sample, speed, offset))
           }
         }
         setNote(lane, noteChan.first)
@@ -280,7 +320,7 @@ class Centillus(val bmsPath: String) extends Game {
             val ratio: Float = barTime.toFloat / laneTime.toFloat
             val offset: Float = ratio + targetTime.toFloat / barTime.toFloat * ratio
             val sample = fetchSound(targetChorus)
-            notesBGM.add(new Note(sample, speed, offset))
+            notesBGM.add(new Note(-1, sample, speed, offset))
           }
         }
       }
