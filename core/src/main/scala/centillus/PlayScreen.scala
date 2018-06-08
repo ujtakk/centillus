@@ -6,8 +6,6 @@ import com.badlogic.gdx.{ Screen
 import com.badlogic.gdx.graphics.{ Texture
                                  , Pixmap
                                  }
-import com.badlogic.gdx.utils.{ TimeUtils
-                              }
 
 class PlayScreen(final val game: Centillus) extends Screen {
   lazy val input = new PlayInputProcessor(game, this)
@@ -25,14 +23,14 @@ class PlayScreen(final val game: Centillus) extends Screen {
   override def pause(): Unit = {
   }
 
-  val whiteW: Float = 44
+  val whiteW: Float = 50
   val whiteH: Float = 10
-  val blackW: Float = 36
+  val blackW: Float = 40
   val blackH: Float = 10
   val redW: Float = 80
   val redH: Float = 10
   val laneNum = game.getLaneNum()
-  val laneLen: Float = 512
+  val laneLen: Float = 580
   val judgeW: Float = 3*blackW + 4*whiteW + redW
   val judgeH: Float = 1
   // val leftSide = true
@@ -58,10 +56,11 @@ class PlayScreen(final val game: Centillus) extends Screen {
     initScreen()
 
     drawNotes()
-    // drawAnime()
+    drawAnime()
     drawJudge()
-    // drawGauge()
+    drawGauge()
     drawScore()
+    drawMeter()
 
     // if (barCount == 6)
     //   Gdx.app.exit()
@@ -87,57 +86,59 @@ class PlayScreen(final val game: Centillus) extends Screen {
     game.makeRect("000000", 0, 0, width, height)
   }
 
+  val laneX: Float = 440
+  val laneY: Float = 120
   def drawLanes() = drawLanes_cent()
   def drawLanes_iidx() = {
-    var laneX: Float = 44
-    val laneY: Float = 44
+    var offsetX: Float = laneX
+    val offsetY: Float = laneY
     if (leftSide) {
-      game.makeRect("000000", laneX, laneY, redW, laneLen, "ffffff")
-      laneX += redW
+      game.makeRect("000000", offsetX, offsetY, redW, laneLen, "ffffff")
+      offsetX += redW
     }
     for (i <- 1 to laneNum/2) {
-      game.makeRect("181818", laneX, laneY, whiteW, laneLen, "ffffff")
-      laneX += whiteW
-      game.makeRect("000000", laneX, laneY, blackW, laneLen, "ffffff")
-      laneX += blackW
+      game.makeRect("181818", offsetX, offsetY, whiteW, laneLen, "ffffff")
+      offsetX += whiteW
+      game.makeRect("000000", offsetX, offsetY, blackW, laneLen, "ffffff")
+      offsetX += blackW
     }
-    game.makeRect("181818", laneX, laneY, whiteW, laneLen, "ffffff")
-    laneX += whiteW
+    game.makeRect("181818", offsetX, offsetY, whiteW, laneLen, "ffffff")
+    offsetX += whiteW
     if (!leftSide) {
-      game.makeRect("000000", laneX, laneY, redW, laneLen, "ffffff")
-      laneX += redW
+      game.makeRect("000000", offsetX, offsetY, redW, laneLen, "ffffff")
+      offsetX += redW
     }
-    game.makeLine("00ff00", laneX, laneY, laneX-judgeW, laneY, judgeH)
+    game.makeLine("00ff00", offsetX, offsetY, offsetX-judgeW, offsetY, judgeH)
   }
 
   def drawLanes_cent() = {
-    var laneX: Float = 44
-    val laneY: Float = 44
-    game.makeRect("181818", laneX, laneY, whiteW, laneLen, "ffffff")
-    laneX += whiteW
-    game.makeRect("000000", laneX, laneY, blackW, laneLen, "ffffff")
-    laneX += blackW
-    game.makeRect("181818", laneX, laneY, whiteW, laneLen, "ffffff")
-    laneX += whiteW
+    var offsetX: Float = laneX
+    val offsetY: Float = laneY
+    game.makeRect("181818", offsetX, offsetY, whiteW, laneLen, "ffffff")
+    offsetX += whiteW
+    game.makeRect("000000", offsetX, offsetY, blackW, laneLen, "ffffff")
+    offsetX += blackW
+    game.makeRect("181818", offsetX, offsetY, whiteW, laneLen, "ffffff")
+    offsetX += whiteW
     if (leftSide) {
-      game.makeRect("000000", laneX, laneY, redW, laneLen, "ffffff")
-      laneX += redW
-      game.makeRect("000000", laneX, laneY, blackW, laneLen, "ffffff")
-      laneX += blackW
+      game.makeRect("000000", offsetX, offsetY, redW, laneLen, "ffffff")
+      offsetX += redW
+      game.makeRect("000000", offsetX, offsetY, blackW, laneLen, "ffffff")
+      offsetX += blackW
     }
     else {
-      game.makeRect("000000", laneX, laneY, blackW, laneLen, "ffffff")
-      laneX += blackW
-      game.makeRect("000000", laneX, laneY, redW, laneLen, "ffffff")
-      laneX += redW
+      game.makeRect("000000", offsetX, offsetY, blackW, laneLen, "ffffff")
+      offsetX += blackW
+      game.makeRect("000000", offsetX, offsetY, redW, laneLen, "ffffff")
+      offsetX += redW
     }
-    game.makeRect("181818", laneX, laneY, whiteW, laneLen, "ffffff")
-    laneX += whiteW
-    game.makeRect("000000", laneX, laneY, blackW, laneLen, "ffffff")
-    laneX += blackW
-    game.makeRect("181818", laneX, laneY, whiteW, laneLen, "ffffff")
-    laneX += whiteW
-    game.makeLine("00ff00", laneX, laneY, laneX-judgeW, laneY, judgeH)
+    game.makeRect("181818", offsetX, offsetY, whiteW, laneLen, "ffffff")
+    offsetX += whiteW
+    game.makeRect("000000", offsetX, offsetY, blackW, laneLen, "ffffff")
+    offsetX += blackW
+    game.makeRect("181818", offsetX, offsetY, whiteW, laneLen, "ffffff")
+    offsetX += whiteW
+    game.makeLine("00ff00", offsetX, offsetY, offsetX-judgeW, offsetY, judgeH)
   }
 
   def drawNotes() = {
@@ -166,8 +167,6 @@ class PlayScreen(final val game: Centillus) extends Screen {
     //   barLinePos = barTime.toFloat / laneTime.toFloat - speed
   }
 
-  val laneX: Float = 44
-  val laneY: Float = 44
   def drawNote(noteLane: Int, notePos: Float) = drawNote_cent(noteLane, notePos)
   private def drawNote_iidx(noteLane: Int, notePos: Float) =
     noteLane match {
@@ -224,10 +223,10 @@ class PlayScreen(final val game: Centillus) extends Screen {
       case _ =>
     }
 
-  val animeX: Float = 44 + 36 + judgeW
-  val animeY: Float = 44
-  val animeW: Float = 512
-  val animeH: Float = 512
+  val animeX: Float = laneX + judgeW + 70
+  val animeY: Float = 400
+  val animeW: Float = 300
+  val animeH: Float = 300
   val animeChan: Int = 4
   var cacheImage: Texture = new Texture(animeW.toInt, animeH.toInt,
                                         Pixmap.Format.RGB888)
@@ -243,7 +242,8 @@ class PlayScreen(final val game: Centillus) extends Screen {
     //     }
     //   }
     // }
-    game.drawImage(cacheImage, animeX, animeY, animeW, animeH)
+    // game.drawImage(cacheImage, animeX, animeY, animeW, animeH)
+    game.makeRect("000000", animeX, animeY, animeW, animeH, "ffffff")
   }
 
   var currentJudge: Judgement = Poor
@@ -262,19 +262,40 @@ class PlayScreen(final val game: Centillus) extends Screen {
       case Space => return
     }
 
-    game.makeFont("ffffff", f"$judgeStr%-8s $combo%4d", 80.0f, 160.0f)
+    val judgeX: Float = laneX + 80
+    val judgeY: Float = laneY + 40
+    game.makeFont("ffffff", f"$judgeStr%-8s $combo%4d", judgeX, judgeY)
+
+    val result = game.getResult()
+    val comboBreaks = game.getComboBreak()
+    game.makeFont("ffffff", f"PERFECT:      ${result(0)}%4d", 920.0f, 340.0f)
+    game.makeFont("ffffff", f"GREAT:        ${result(1)}%4d", 920.0f, 300.0f)
+    game.makeFont("ffffff", f"GOOD:         ${result(2)}%4d", 920.0f, 260.0f)
+    game.makeFont("ffffff", f"BAD:          ${result(3)}%4d", 920.0f, 220.0f)
+    game.makeFont("ffffff", f"POOR:         ${result(4)}%4d", 920.0f, 180.0f)
+    game.makeFont("ffffff", f"COMBO BREAK:  $comboBreaks%4d", 920.0f, 140.0f)
   }
 
   def drawGauge() = {
+    game.makeRect("000000", 460, 40, 360, 40, "ffffff")
   }
 
   def drawScore() = {
     val score = game.calcScore()
+    game.makeFont("ffffff", f"SCORE:   $score%6d", 80.0f, 80.0f)
     val maxCombo = game.getMaxCombo()
-    val scoreStr = f"""
-      SCORE:     $score%6d
-      MAX COMBO: $maxCombo%6d
-    """
-    game.makeFont("ffffff", scoreStr, 400.0f, 400.0f)
+    game.makeFont("ffffff", f"MAX COMBO: $maxCombo%4d", 80.0f, 40.0f)
+    val herebpm: Int = game.fetchBPM().toInt
+    game.makeFont("ffffff", f"       BPM: $herebpm%3d", 80.0f, 0.0f)
+    val level = game.fetchLevel()
+    game.makeFont("ffffff", f"LEVEL: $level%2d", 920.0f, 80.0f)
+    val hiSpeed = game.getHiSpeed()
+    game.makeFont("ffffff", f"HISPEED: $hiSpeed%4.2f", 920.0f, 40.0f)
+    val rank = game.calcRank()
+    game.makeFont("ffffff", f"RANK: $rank%3s", 920.0f, 0.0f)
+  }
+
+  def drawMeter() = {
+    game.makeRect("000000", 70, 120, 300, 580, "ffffff")
   }
 }

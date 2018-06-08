@@ -24,7 +24,8 @@ class LoadScreen(final val game: Centillus) extends Screen {
 
     val offsetX = (winWidth-imgWidth) / 2
     val offsetY = (winHeight-imgHeight) / 2
-    game.drawImage(image, offsetX, offsetY, imgWidth, imgHeight)
+    // game.drawImage(image, offsetX, offsetY, imgWidth, imgHeight)
+    game.drawImage(image, 0, 0, winWidth, winHeight)
 
     if (game.isLoadingEnd()) {
       game.setScreen(new PlayScreen(game))

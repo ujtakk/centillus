@@ -31,8 +31,9 @@ class Centillus(val bmsPath: String) extends Game {
   val whole: Float = 1.0f
   val hispeed: Float = 2.0f
   val speed: Float = hispeed * whole/fps
-  def getWhole() = speed
+  def getWhole() = whole
   def getSpeed() = speed
+  def getHiSpeed() = hispeed
   def getFPS() = fps
   val whiteN: Int = 4
   val blackN: Int = 3
@@ -67,10 +68,14 @@ class Centillus(val bmsPath: String) extends Game {
 
   def canFetchData() = model.hasData(barCount)
   def fetchData() = model.getData(barCount)
+  def fetchGenre() = model.getGenre()
+  def fetchTitle() = model.getTitle()
+  def fetchArtist() = model.getArtist()
+  def fetchLevel() = model.getLevel()
   def fetchBPM() = model.getBPM(barCount)
   def fetchTotalNotes() = model.getTotalNotes()
   def fetchSound(number: String) = model.getSound(number)
-  def fetchImage(number: String): Texture = model.getImage(number)
+  def fetchImage(number: String) = model.getImage(number)
   def fetchStageFile() = model.getStageFile()
 
   var maxCombo: Int = 0
@@ -115,21 +120,21 @@ class Centillus(val bmsPath: String) extends Game {
     updateScore(combo, judge)
   }
 
-  def calcScore() = comboScore + judgeScore
-  var comboScore: Int = 0
-  var judgeScore: Int = 0
+  def calcScore(): Int = (comboScore + judgeScore).toInt
+  var comboScore: Float = 0
+  var judgeScore: Float = 0
   def updateScore(combo: Int, judge: Judgement) = {
     val totalNotes: Int = fetchTotalNotes()
-    val comboCoef: Int = 50000 / (10 * totalNotes - 55)
+    val comboCoef: Float = 50000.0f / (10 * totalNotes - 55)
     comboScore += (combo match {
       case _ if combo < 2 => 0
       case _ if combo < 11 => (combo-1) * comboCoef
       case _ => 10 * comboCoef
     })
     judgeScore += (judge match {
-      case Perfect => 150000 / totalNotes
-      case Great => 100000 / totalNotes
-      case Good => 20000 / totalNotes
+      case Perfect => 150000.0f / totalNotes
+      case Great => 100000.0f / totalNotes
+      case Good => 20000.0f / totalNotes
       case Bad => 0
       case Poor => 0
       case Miss => 0
@@ -171,15 +176,16 @@ class Centillus(val bmsPath: String) extends Game {
     shape.end()
   }
 
+  val fontSize = 32
   lazy val fontFile = Gdx.files.internal("fonts/UbuntuMono-Regular.ttf")
   lazy val fontGen = new FreeTypeFontGenerator(fontFile)
   lazy val param = new FreeTypeFontGenerator.FreeTypeFontParameter
-  param.size = 32
+  param.size = fontSize
   param.color = Color.valueOf("ffffff")
   lazy val font = fontGen.generateFont(param)
   def makeFont(color: String, str: String, x: Float, y: Float) = {
     batch.begin()
-    font.draw(batch, str, x, y)
+    font.draw(batch, str, x, y+fontSize)
     batch.end()
   }
 
@@ -225,10 +231,10 @@ class Centillus(val bmsPath: String) extends Game {
         setNote(lane, noteChan.first)
         val noteFirst = noteChan.first()
         // if (noteFirst.getPos() < 0.0f) {
-        //   noteFirst.play()
+        //   playNote(noteFirst.getLane())
+        //   judgeInput(noteFirst)
         // }
         if (noteFirst.getPos() < -16*speed) {
-          // noteFirst.play()
           judgeInput(noteFirst, missed=true)
         }
       }

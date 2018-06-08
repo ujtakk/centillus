@@ -1,6 +1,5 @@
 package centillus
 
-import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.{Screen, Gdx}
 import com.badlogic.gdx.Input.Keys
 
@@ -15,8 +14,7 @@ class ResultScreen(final val game: Centillus) extends Screen {
   }
 
   override def render(x: Float): Unit = {
-    Gdx.gl.glClearColor(0f, 0f, 0f, 1f)
-    Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT)
+    game.initScreen()
 
     val totalNotes = game.fetchTotalNotes()
     val maxCombo = game.getMaxCombo()

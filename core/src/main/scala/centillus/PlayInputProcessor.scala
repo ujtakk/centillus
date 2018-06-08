@@ -30,6 +30,8 @@ extends InputProcessor {
         case Keys.K => game.playNote(6)
         case Keys.L => game.playNote(7)
         case Keys.SEMICOLON => game.playNote(0)
+        case Keys.G => game.playNote(0)
+        case Keys.H => game.playNote(0)
         case Keys.ENTER => return false
         case _ => return false
       }

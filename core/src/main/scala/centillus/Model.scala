@@ -1,6 +1,7 @@
 package centillus
 
-import java.nio.file.Paths
+import java.util.stream.Collectors
+import java.nio.file.{Files, FileSystems, Paths}
 import scala.collection.mutable.{Map => MMap, Seq => MSeq}
 
 import com.badlogic.gdx.Gdx
@@ -47,7 +48,8 @@ class Model {
   def readBMS(filename: String) = {
     prefix = Paths.get(filename).getParent().toString()
 
-    val fileHandle = Gdx.files.internal(filename)
+    println(filename)
+    val fileHandle = Gdx.files.local(filename)
     val dataStr = fileHandle.readString()
     val data: List[BMSObject] = parser.parse(dataStr) match {
       case Right(msg) => msg
@@ -63,6 +65,10 @@ class Model {
     }
   }
 
+  def basename(fname: String): String = {
+    return fname.substring(0, fname.lastIndexOf('.'))
+  }
+
   def annotate(msg: BMSObject) = msg match {
     case BMSNil() => {}
     case Player(number) => { player = number }
@@ -75,11 +81,17 @@ class Model {
     case Total(amount) => { total = amount }
     case Stagefile(filename) => {
       stagefile = filename
-      val stagefilePath = Paths.get(prefix, stagefile).toString()
-      stagefileTexture = new Texture(Gdx.files.internal(stagefilePath))
+      val basepath = Paths.get(prefix, basename(stagefile)).toString()
+      println(basepath)
+      val matcher = FileSystems.getDefault().getPathMatcher(s"glob:$basepath.*")
+      val entries = Files.list(Paths.get(prefix))
+      val paths = entries.filter(matcher.matches).collect(Collectors.toList())
+      val path = paths.get(0).toString()
+      // val stagefilePath = Paths.get(prefix, stagefile).toString()
+      stagefileTexture = new Texture(Gdx.files.internal(path))
     }
-    case WAV(number, filename) => { wavPathMap += (number -> filename) }
-    case BMP(number, filename) => { bmpPathMap += (number -> filename) }
+    case WAV(number, fname) => { wavPathMap += (number -> basename(fname)) }
+    case BMP(number, fname) => { bmpPathMap += (number -> basename(fname)) }
     case Data(bar, chan, objs) => {
       val chanMap = dataMap.getOrElseUpdate(bar, MMap.empty[Chan, MSeq[Data]])
       // chanMap(chan) = readObjs(objs)
@@ -115,16 +127,28 @@ class Model {
   }
 
   def loadSounds() = {
-    for ((_, filename) <- wavPathMap) {
-      val path = Paths.get(prefix, filename).toString()
+    for ((key, base) <- wavPathMap) {
+      val basepath = Paths.get(prefix, base).toString()
+      println(basepath)
+      val matcher = FileSystems.getDefault().getPathMatcher(s"glob:$basepath.*")
+      val entries = Files.list(Paths.get(prefix))
+      val paths = entries.filter(matcher.matches).collect(Collectors.toList())
+      val path = paths.get(0).toString()
       manager.load(path, classOf[Sound])
+      wavPathMap(key) = path
     }
   }
 
   def loadImages() = {
-    for ((_, filename) <- bmpPathMap) {
-      val path = Paths.get(prefix, filename).toString()
+    for ((key, base) <- bmpPathMap) {
+      val basepath = Paths.get(prefix, base).toString()
+      println(basepath)
+      val matcher = FileSystems.getDefault().getPathMatcher(s"glob:$basepath.*")
+      val entries = Files.list(Paths.get(prefix))
+      val paths = entries.filter(matcher.matches).collect(Collectors.toList())
+      val path = paths.get(0).toString()
       // manager.load(path, classOf[Texture])
+      bmpPathMap(key) = path
     }
   }
 
@@ -134,15 +158,19 @@ class Model {
   def getData(bar: Int) = dataMap(bar)
   def getBPM(bar: Int) = bpm
   def getSound(number: String) = {
-    val filename = wavPathMap(number)
-    val path = Paths.get(prefix, filename).toString()
+    val path = wavPathMap(number)
+    // val path = Paths.get(prefix, filename).toString()
     manager.get(path, classOf[Sound])
   }
   def getImage(number: String) = {
-    val filename = bmpPathMap(number)
-    val path = Paths.get(prefix, filename).toString()
-    manager.get(path, classOf[Texture])
+    val path = bmpPathMap(number)
+    // val path = Paths.get(prefix, filename).toString()
+    // manager.get(path, classOf[Texture])
   }
+  def getGenre() = genre
+  def getTitle() = title
+  def getArtist() = artist
+  def getLevel() = playlevel
   def getStageFile(): Texture = stagefileTexture
   def getMaxBar() = maxBar
   def getTotalNotes() = totalNotes

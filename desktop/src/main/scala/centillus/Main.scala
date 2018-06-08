@@ -6,19 +6,12 @@ import com.badlogic.gdx.backends.lwjgl.{
 }
 
 object Main extends App {
-  // val path = "Nank04_dragonlady/normal.bms"
-  // val path = "Nank04_dragonlady/hard.bms"
-  // val path = "nm23_nm05/littlehearts.bme"
-  // val path = "nm23_nm05/littlehearts(another7).bme"
-  // val path = "nm23_nm05/littlehearts(bt4god).bme"
-  // val path = "マイアミベース/miamibass.bms"
-  val path = "elegante/03_another.bme"
-  // val path = "air/air7light.bme"
+  val path = args(0)
   val cfg = new LwjglApplicationConfiguration
   cfg.title = "Centillus"
   cfg.foregroundFPS = 60
-  cfg.height = 600
-  cfg.width = 1000
+  cfg.height = 720
+  cfg.width = 1280
   cfg.forceExit = false
   new LwjglApplication(new Centillus(path), cfg)
 }

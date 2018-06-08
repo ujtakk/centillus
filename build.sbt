@@ -11,7 +11,7 @@ val libgdxVersion = "1.9.8"
 lazy val sharedSettings: Seq[Def.Setting[_]] = Seq(
   name := "centillus",
   version := "0.1",
-  scalaVersion := "2.11.12",
+  scalaVersion := "2.12.6",
   assetsDirectory := {
     val r = file("assets")
     IO.createDirectory(r)
