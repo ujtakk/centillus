@@ -46,6 +46,7 @@ class Centillus(val bmsPath: String) extends Game {
   for (i <- 1 to laneNum+1)
       notes.add(new Queue[Note])
   val notesBGM = new Array[Note]
+  val frames = new Array[Frame]
 
   override def create(): Unit = {
     model.readBMS(bmsPath)
@@ -262,17 +263,31 @@ class Centillus(val bmsPath: String) extends Game {
         }
       }
     }
-    val iter = notesBGM.iterator()
-    while (iter.hasNext()) {
-      val note = iter.next()
+    val notesIter = notesBGM.iterator()
+    while (notesIter.hasNext()) {
+      val note = notesIter.next()
       val notePos = note.getPos()
       note.update()
-      if (notePos <= 0.0f) {
+      if (notePos < 0.0f) {
         note.play(0.5f)
-        iter.remove()
+        notesIter.remove()
+      }
+    }
+    val animeIter = frames.iterator()
+    while (animeIter.hasNext()) {
+      val frame = animeIter.next()
+      val framePos = frame.getPos()
+      frame.update()
+      if (framePos < 0.0f) {
+        setFrame(frame)
+        animeIter.remove()
       }
     }
   }
+
+  var cacheFrame: Frame = null
+  def setFrame(frame: Frame) = { cacheFrame = frame }
+  def getFrame() = cacheFrame
 
   private def bpm = fetchBPM()
   var baseTime: Long = 0
@@ -343,6 +358,22 @@ class Centillus(val bmsPath: String) extends Game {
             val offset: Float = ratio + targetTime.toFloat / barTime.toFloat * ratio
             val sample = fetchSound(targetChorus)
             notesBGM.add(new Note(-1, sample, speed, offset))
+          }
+        }
+      }
+    }
+    val animeChan = 4
+    if (barData.contains(animeChan)) {
+      val animeDataSeq = barData(animeChan)
+      for (animeDataIdx <- 0 until animeDataSeq.length) {
+        val animeData = animeDataSeq(animeDataIdx)
+        for ((targetTime, targetAnime) <- animeData) {
+          if (targetAnime != "00") {
+            val laneTime = (whole/speed) * (1e9f/fps)
+            val ratio: Float = barTime.toFloat / laneTime.toFloat
+            val offset: Float = ratio + targetTime.toFloat / barTime.toFloat * ratio
+            val image = fetchImage(targetAnime)
+            frames.add(new Frame(image, speed, offset))
           }
         }
       }

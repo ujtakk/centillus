@@ -147,7 +147,7 @@ class Model {
       val entries = Files.list(Paths.get(prefix))
       val paths = entries.filter(matcher.matches).collect(Collectors.toList())
       val path = paths.get(0).toString()
-      // manager.load(path, classOf[Texture])
+      manager.load(path, classOf[Texture])
       bmpPathMap(key) = path
     }
   }
@@ -159,13 +159,17 @@ class Model {
   def getBPM(bar: Int) = bpm
   def getSound(number: String) = {
     val path = wavPathMap(number)
-    // val path = Paths.get(prefix, filename).toString()
     manager.get(path, classOf[Sound])
   }
   def getImage(number: String) = {
-    val path = bmpPathMap(number)
-    // val path = Paths.get(prefix, filename).toString()
-    // manager.get(path, classOf[Texture])
+    if (bmpPathMap.contains(number)) {
+      val path = bmpPathMap(number)
+      manager.get(path, classOf[Texture])
+    }
+    else {
+      println(number)
+      stagefileTexture
+    }
   }
   def getGenre() = genre
   def getTitle() = title

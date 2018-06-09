@@ -231,19 +231,10 @@ class PlayScreen(final val game: Centillus) extends Screen {
   var cacheImage: Texture = new Texture(animeW.toInt, animeH.toInt,
                                         Pixmap.Format.RGB888)
   def drawAnime() = {
-    // if (game.barData.contains(animeChan)) {
-    //   val currTime = TimeUtils.timeSinceNanos(baseTime)
-    //   val animeData = game.barData(animeChan)(0)
-    //   val (targetTime, targetBGA) = animeData.head
-    //   if (targetTime < currTime) {
-    //     game.barData(animeChan)(0) = animeData.tail
-    //     if (targetBGA != "00") {
-    //       cacheImage = game.fetchImage(targetBGA)
-    //     }
-    //   }
-    // }
-    // game.drawImage(cacheImage, animeX, animeY, animeW, animeH)
-    game.makeRect("000000", animeX, animeY, animeW, animeH, "ffffff")
+    val frame = game.getFrame()
+    if (frame != null)
+      cacheImage = frame.show()
+    game.drawImage(cacheImage, animeX, animeY, animeW, animeH)
   }
 
   var currentJudge: Judgement = Poor
