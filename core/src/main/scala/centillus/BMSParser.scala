@@ -15,7 +15,7 @@ class BMSParser extends RegexParsers {
   def artist = "ARTIST" ~ """(.*)""".r ^^ {
     case "ARTIST" ~ name => Artist(name)
   }
-  def bpm = "BPM" ~ """\d{3}""".r ^^ {
+  def bpm = "BPM" ~ """\d{1,}(\.\d{0,})*""".r ^^ {
     case "BPM" ~ tempo => BPM(tempo.toDouble)
   }
   def playlevel = "PLAYLEVEL" ~ """\d{1,}""".r ^^ {
