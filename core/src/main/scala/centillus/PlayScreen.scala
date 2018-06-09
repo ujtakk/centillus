@@ -276,8 +276,25 @@ class PlayScreen(final val game: Centillus) extends Screen {
     game.makeFont("ffffff", f"COMBO BREAK:  $comboBreaks%4d", 920.0f, 140.0f)
   }
 
+  val gaugeX: Float = 440
+  val gaugeY: Float = 40
   def drawGauge() = {
-    game.makeRect("000000", 460, 40, 360, 40, "ffffff")
+    val gauge = game.getGauge().toInt
+    val gaugeW: Float = 6
+    val gaugeH: Float = gaugeY
+    game.makeRect("000000", gaugeX, gaugeY, (100/2)*gaugeW, gaugeH, "ffffff")
+    var offset = gaugeX
+    for (i <- 2 to gauge by 2) {
+      if (i < 80)
+        game.makeRect("00ff00", offset, gaugeY, gaugeW, gaugeH, "ffffff")
+      else
+        game.makeRect("ff0000", offset, gaugeY, gaugeW, gaugeH, "ffffff")
+      offset += gaugeW
+    }
+    val digitX: Float = gaugeX+(100/2)*gaugeW
+    val digitW: Float = 100
+    game.makeRect("000000", digitX, gaugeY, digitW, gaugeH, "ffffff")
+    game.makeFont("000000", f" $gauge%3d%%", digitX, gaugeY)
   }
 
   def drawScore() = {

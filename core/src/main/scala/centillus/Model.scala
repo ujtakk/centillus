@@ -171,6 +171,7 @@ class Model {
   def getTitle() = title
   def getArtist() = artist
   def getLevel() = playlevel
+  def getTotal() = total
   def getStageFile(): Texture = stagefileTexture
   def getMaxBar() = maxBar
   def getTotalNotes() = totalNotes

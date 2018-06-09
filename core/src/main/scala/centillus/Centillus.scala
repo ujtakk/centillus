@@ -29,7 +29,7 @@ class Centillus(val bmsPath: String) extends Game {
 
   val fps: Float = 60.0f
   val whole: Float = 1.0f
-  val hispeed: Float = 2.0f
+  val hispeed: Float = 2.00f
   val speed: Float = hispeed * whole/fps
   def getWhole() = whole
   def getSpeed() = speed
@@ -72,6 +72,7 @@ class Centillus(val bmsPath: String) extends Game {
   def fetchTitle() = model.getTitle()
   def fetchArtist() = model.getArtist()
   def fetchLevel() = model.getLevel()
+  def fetchTotal() = model.getTotal()
   def fetchBPM() = model.getBPM(barCount)
   def fetchTotalNotes() = model.getTotalNotes()
   def fetchSound(number: String) = model.getSound(number)
@@ -123,6 +124,7 @@ class Centillus(val bmsPath: String) extends Game {
   def calcScore(): Int = (comboScore + judgeScore).toInt
   var comboScore: Float = 0
   var judgeScore: Float = 0
+  var gauge: Float = 20.0f
   def updateScore(combo: Int, judge: Judgement) = {
     val totalNotes: Int = fetchTotalNotes()
     val comboCoef: Float = 50000.0f / (10 * totalNotes - 55)
@@ -140,11 +142,27 @@ class Centillus(val bmsPath: String) extends Game {
       case Miss => 0
       case Space => 0
     })
+
+    val gaugeUnit: Float = fetchTotal().toFloat / fetchTotalNotes().toFloat
+    gauge += (judge match {
+      case Perfect => gaugeUnit
+      case Great => gaugeUnit
+      case Good => gaugeUnit/2
+      case Bad => -2.0f
+      case Poor => -2.0f
+      case Miss => -6.0f
+      case Space => 0.0f
+    })
+    if (gauge < 2.0f)
+      gauge = 2.0f
+    if (gauge > 100.0f)
+      gauge = 100.0f
   }
 
   def getMaxCombo() = maxCombo
   def getCombo() = combo
   def getComboBreak() = comboBreak
+  def getGauge() = gauge - gauge % 2
   def getJudge() = judge
   def getResult() = result
 
@@ -219,6 +237,7 @@ class Centillus(val bmsPath: String) extends Game {
 
   def setNote(lane: Int, note: Note) = noteMap.put(lane, note)
 
+  val autoMode = false
   def updateNotes() = {
     for (lane <- 0 to laneNum) {
       val noteChan = notes.get(lane)
@@ -230,22 +249,18 @@ class Centillus(val bmsPath: String) extends Game {
       if (noteChan.size != 0) {
         setNote(lane, noteChan.first)
         val noteFirst = noteChan.first()
-        // if (noteFirst.getPos() < 0.0f) {
-        //   playNote(noteFirst.getLane())
-        //   judgeInput(noteFirst)
-        // }
-        if (noteFirst.getPos() < -16*speed) {
-          judgeInput(noteFirst, missed=true)
+        if (autoMode) {
+          if (noteFirst.getPos() < 0.0f) {
+            playNote(noteFirst.getLane())
+            judgeInput(noteFirst)
+          }
+        }
+        else {
+          if (noteFirst.getPos() < -16*speed) {
+            judgeInput(noteFirst, missed=true)
+          }
         }
       }
-      // val iter = notes.get(lane).iterator()
-      // while (iter.hasNext()) {
-      //   note.update()
-      //   if (notePos <= 0.0f) {
-      //     note.play()
-      //     iter.remove()
-      //   }
-      // }
     }
     val iter = notesBGM.iterator()
     while (iter.hasNext()) {
@@ -272,6 +287,7 @@ class Centillus(val bmsPath: String) extends Game {
     maxCombo = 0
     combo = 0
     comboBreak = 0
+    gauge = 20
     judge = Space
     result = ArrayBuffer(0, 0, 0, 0, 0)
     comboScore = 0
