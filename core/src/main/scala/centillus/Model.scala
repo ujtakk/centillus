@@ -82,8 +82,8 @@ class Model {
     case Stagefile(filename) => {
       stagefile = filename
       val basepath = Paths.get(prefix, basename(stagefile)).toString()
-      println(basepath)
-      val matcher = FileSystems.getDefault().getPathMatcher(s"glob:$basepath.*")
+      val pattern = s"glob:$basepath.*".replace("[", "\\[").replace("]", "\\]")
+      val matcher = FileSystems.getDefault().getPathMatcher(pattern)
       val entries = Files.list(Paths.get(prefix))
       val paths = entries.filter(matcher.matches).collect(Collectors.toList())
       val path = paths.get(0).toString()
@@ -129,8 +129,8 @@ class Model {
   def loadSounds() = {
     for ((key, base) <- wavPathMap) {
       val basepath = Paths.get(prefix, base).toString()
-      println(basepath)
-      val matcher = FileSystems.getDefault().getPathMatcher(s"glob:$basepath.*")
+      val pattern = s"glob:$basepath.*".replace("[", "\\[").replace("]", "\\]")
+      val matcher = FileSystems.getDefault().getPathMatcher(pattern)
       val entries = Files.list(Paths.get(prefix))
       val paths = entries.filter(matcher.matches).collect(Collectors.toList())
       val path = paths.get(0).toString()
@@ -139,14 +139,20 @@ class Model {
     }
   }
 
-  def loadImages() = {
+  def loadImages(): Unit = {
     for ((key, base) <- bmpPathMap) {
       val basepath = Paths.get(prefix, base).toString()
-      println(basepath)
-      val matcher = FileSystems.getDefault().getPathMatcher(s"glob:$basepath.*")
+      val pattern = s"glob:$basepath.*".replace("[", "\\[").replace("]", "\\]")
+      val matcher = FileSystems.getDefault().getPathMatcher(pattern)
       val entries = Files.list(Paths.get(prefix))
       val paths = entries.filter(matcher.matches).collect(Collectors.toList())
       val path = paths.get(0).toString()
+      if (path.contains("mpg")) {
+        val mpeg_notyet_implemented_path = "mpeg.png"
+        manager.load(mpeg_notyet_implemented_path, classOf[Texture])
+        bmpPathMap(key) = mpeg_notyet_implemented_path
+        return
+      }
       manager.load(path, classOf[Texture])
       bmpPathMap(key) = path
     }
@@ -167,7 +173,6 @@ class Model {
       manager.get(path, classOf[Texture])
     }
     else {
-      println(number)
       stagefileTexture
     }
   }
