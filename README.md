@@ -1,6 +1,6 @@
 Centillus
 ============================================================
-BMS client for keyboard-based players.
+BMS client for keyboard-based players
 
 **Don't use this application for playing copyrighted contents.**
 
