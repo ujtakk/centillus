@@ -23,4 +23,4 @@ License
 MIT License (see `LICENSE` file).
 
 Fonts (`assets/fonts/UbuntuMono-*.ttf`) are redistributed
-under Ubuntu Font License Version 1.0.
+under Ubuntu Font License Version 1.0 (`assets/fonts/UFL.txt`).
